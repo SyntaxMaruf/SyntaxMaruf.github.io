@@ -10,21 +10,21 @@ window.portfolioProjects = [
     ],
     "tags": [
       "Live App",
-      "Browser Storage",
+      "Google Sign-in",
       "Daily Progress"
     ],
-    "description": "Your day. Your pace. Your progress. A browser-saved diary for study, routines, sleep, spending, and reflection.",
+    "description": "Your day. Your pace. Your progress. A personal diary for study, routines, sleep, spending, and reflection, with Google sign-in and online account storage.",
     "repo": null,
     "number": "01",
     "visual": "diary",
     "appUrl": "./progressdiary.html",
     "points": [
-      "No login needed; records are saved in this browser only",
+      "Continue with Google to use your account diary on phone and computer",
       "Build a seven-day routine and edit only the hours you choose",
       "Record study, classes, sleep, daily spending and optional prayers",
-      "Search saved days, compare weeks, and download your own reports"
+      "Explore a 10-day progress graph, compare weeks, and download reports"
     ],
-    "detail": "My original C programming idea, reimagined as a full-stack web app. ProgressDiary makes daily tracking simple with a visual weekly planner, honest daily logs, date-based reports and personal progress summaries. Each browser keeps its own diary. Download backups; automatic cross-device sync is not available. Idea by Maruf Billah, implemented with AI support."
+    "detail": "My original C programming idea, reimagined as a full-stack web app. ProgressDiary makes daily tracking simple with a visual weekly planner, honest daily logs, date-based reports and personal progress summaries. Continue with Google to access the same online diary across devices. View study achievement, routine match and spending in a three-line chart with a 10-day view. Browser-only mode and downloadable backups are also available. Idea by Maruf Billah, implemented with AI support."
   },
   {
     "id": "bus",
