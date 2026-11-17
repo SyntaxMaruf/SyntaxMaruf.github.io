@@ -11,7 +11,7 @@ https://syntaxmaruf.github.io/
 ## 📓 ProgressDiary
 Open `progressdiary.html` from the portfolio. The original design, P-and-arrow mark, weekly planner, daily log, reports, motivation, settings, history and backups are kept.
 
-This GitHub Pages edition starts empty. It does not use ChatGPT login or a server database. Records are saved in this browser only. Anyone with access to the same browser can open them. Clearing browser data removes the diary. Different devices have separate records. Download regular JSON backups. Backup import is not provided in this edition.
+This GitHub Pages edition starts empty. It does not use ChatGPT login or a server database. Records are saved in this browser only. Anyone with access to the same browser can open them. Clearing browser data removes the diary. Different devices have separate records. Download regular JSON backups. History & backups includes Import backup. Complete original ChatGPT v3 and browser v1 JSON backups are supported. Imports add new dates and keep existing dates unchanged. Replacing the current profile and weekly routine is optional. Files are validated and processed on this device.
 
 ## 🛠 Edit the website
 - `index.html`: home page and sections.

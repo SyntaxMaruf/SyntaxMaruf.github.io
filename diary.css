@@ -32,3 +32,5 @@
 
 /* Slightly stronger department and university credit. */
 .creator-credit>small{font-weight:600}
+
+.import-panel{margin:24px 0}.import-panel input[type=file]{max-width:100%;width:100%}.import-profile-choice{display:flex;align-items:flex-start;gap:10px;font-size:14px;margin:18px 0}.import-profile-choice input{margin-top:5px;flex-shrink:0}.import-panel .button{margin:5px 8px 5px 0}
