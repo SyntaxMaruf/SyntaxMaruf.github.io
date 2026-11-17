@@ -12,7 +12,8 @@
   document.body.prepend(bar);
   const $ = id => document.getElementById(id);
   const say = message => { $('cloud-status').textContent = message; };
-  const clean = value => JSON.parse(JSON.stringify(value));
+  const clean = value => ({__pd_json_v1: JSON.stringify(value)});
+  const decode = value => { if (!value || typeof value !== "object") return value; if (typeof value.__pd_json_v1 === "string") return decode(JSON.parse(value.__pd_json_v1)); if (Array.isArray(value)) return value.map(decode); return Object.fromEntries(Object.entries(value).map(([key,item])=>[key,decode(item)])); };
   const refresh = (accountChange=false) => window.dispatchEvent(new CustomEvent('progressdiary:refresh',{detail:{accountChange}}));
   const base = () => ['diaries', user.uid];
   const ref = (...path) => sdk.doc(db, ...base(), ...path);
@@ -29,7 +30,7 @@
   function unwrap(snapshot) {
     const data = snapshot.exists() ? snapshot.data() : null;
     checkVersion(data);
-    return data?.value || null;
+    return decode(data?.value) || null;
   }
   async function readState() {
     const [profile, days] = await Promise.all([sdk.getDoc(ref('meta', 'profile')), sdk.getDocs(col('days'))]);
@@ -44,7 +45,7 @@
       const date = parsed.searchParams.get('date');
       if (path === 'history' && date || path === 'backup') {
         const dates = date ? [date] : state.entries.map(day => day.date);
-        state.history = (await Promise.all(dates.map(async day => (await sdk.getDocs(col('days', day, 'versions'))).docs.map(d => ({...d.data().value,versionId:d.id}))))).flat();
+        state.history = (await Promise.all(dates.map(async day => (await sdk.getDocs(col('days', day, 'versions'))).docs.map(d => ({...decode(d.data().value),versionId:d.id}))))).flat();
       }
       const result = await reduce(state);
       if (path === 'state') {
@@ -64,8 +65,8 @@
         const state = {profile: path === 'profile' ? current : null, entries: path === 'profile' ? [] : current ? [current] : [], history: []};
         if (path === 'history' && method === 'POST') {
           const old = await tx.get(ref('days', date, 'versions', String(body.version)));
-          if (old.exists()) state.history.push(old.data().value);
-          if (old.exists()) body={...body,version:old.data().value.revision};
+          if (old.exists()) state.history.push(decode(old.data().value));
+          if (old.exists()) body={...body,version:decode(old.data().value).revision};
         }
         const historyStart = state.history.length;
         const value = await reduce(state, body);
