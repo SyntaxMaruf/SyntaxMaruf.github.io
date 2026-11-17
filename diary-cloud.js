@@ -1,0 +1,165 @@
+/* Stable account paths are independent of app releases. Never clear data on deploy. */
+(() => {
+  const LOCAL = 'progressdiary-github-v1';
+  let sdk, auth, db, user = null, writing = 0, error = null, stop = [];
+  let resolveReady;
+  const ready = new Promise(resolve => { resolveReady = resolve; });
+  const cloud = window.ProgressDiaryCloud = {ready, get signedIn() { return !!user; }, request};
+  const bar = document.createElement('section');
+  bar.className = 'cloud-account';
+  bar.setAttribute('aria-label', 'Google account and sync');
+  bar.innerHTML = '<div><strong>ProgressDiary account</strong><p id="cloud-status" role="status">Connecting to Google sign-in…</p></div><div class="cloud-actions"><button id="cloud-login" disabled>Continue with Google</button><button id="cloud-migrate" hidden>Connect this browser diary</button><button id="cloud-logout" hidden>Sign out</button></div>';
+  document.body.prepend(bar);
+  const $ = id => document.getElementById(id);
+  const say = message => { $('cloud-status').textContent = message; };
+  const clean = value => JSON.parse(JSON.stringify(value));
+  const refresh = (accountChange=false) => window.dispatchEvent(new CustomEvent('progressdiary:refresh',{detail:{accountChange}}));
+  const base = () => ['diaries', user.uid];
+  const ref = (...path) => sdk.doc(db, ...base(), ...path);
+  const col = (...path) => sdk.collection(db, ...base(), ...path);
+  function local() {
+    try { return JSON.parse(localStorage.getItem(LOCAL) || 'null'); } catch { return null; }
+  }
+  function safeSize(value) {
+    if (new TextEncoder().encode(JSON.stringify(value)).length > 850000) throw Error('This record is too large to sync. Your existing records are unchanged.');
+  }
+  function checkVersion(data) {
+    if (data?.schemaVersion > 1) throw Error('A newer diary version is needed. Refresh the app; your saved data has not been changed.');
+  }
+  function unwrap(snapshot) {
+    const data = snapshot.exists() ? snapshot.data() : null;
+    checkVersion(data);
+    return data?.value || null;
+  }
+  async function readState() {
+    const [profile, days] = await Promise.all([sdk.getDoc(ref('meta', 'profile')), sdk.getDocs(col('days'))]);
+    return {profile: unwrap(profile), entries: days.docs.map(unwrap).filter(Boolean), history: []};
+  }
+  async function request(url, method = 'GET', body, reduce) {
+    if (error) throw error;
+    if (!user) throw Error('Sign in again to access your account diary.');
+    const parsed = new URL(url, location.origin), path = parsed.pathname.replace(/^\//, '');
+    if (method === 'GET') {
+      const state = await readState();
+      const date = parsed.searchParams.get('date');
+      if (path === 'history' && date || path === 'backup') {
+        const dates = date ? [date] : state.entries.map(day => day.date);
+        state.history = (await Promise.all(dates.map(async day => (await sdk.getDocs(col('days', day, 'versions'))).docs.map(d => ({...d.data().value,versionId:d.id}))))).flat();
+      }
+      const result = await reduce(state);
+      if (path === 'state') {
+        try { localStorage.setItem('progressdiary-account-cache-' + user.uid, JSON.stringify(state)); } catch {}
+        say('Signed in as ' + user.email + ' · Saved records are synced online.');
+      }
+      return result;
+    }
+    if (!navigator.onLine) throw Error('You are offline. Your draft is still on screen. Reconnect before saving to your account.');
+    writing++;
+    say('Saving to your Google account…');
+    try {
+      const result = await sdk.runTransaction(db, async tx => {
+        const date = body?.date || body?.entry?.date;
+        const target = path === 'profile' ? ref('meta', 'profile') : ref('days', date);
+        const current = unwrap(await tx.get(target));
+        const state = {profile: path === 'profile' ? current : null, entries: path === 'profile' ? [] : current ? [current] : [], history: []};
+        if (path === 'history' && method === 'POST') {
+          const old = await tx.get(ref('days', date, 'versions', String(body.version)));
+          if (old.exists()) state.history.push(old.data().value);
+          if (old.exists()) body={...body,version:old.data().value.revision};
+        }
+        const historyStart = state.history.length;
+        const value = await reduce(state, body);
+        const next = path === 'profile' ? state.profile : state.entries.find(d => d.date === date);
+        safeSize(next);
+        tx.set(target, {schemaVersion: 1, value: clean(next), updatedAt: sdk.serverTimestamp()}, {merge: true});
+        for (const version of state.history.slice(historyStart)) {
+          safeSize(version);
+          tx.set(ref('days', version.date, 'versions', String(version.revision)), {schemaVersion: 1, value: clean(version)});
+        }
+        return value;
+      });
+      say('Saved to your Google account. Available on your other devices.');
+      return result;
+    } catch (err) {
+      say('Save failed. Your draft is still on screen; existing online records are unchanged.');
+      throw err;
+    } finally { writing--; }
+  }
+  async function migrate() {
+    const data = local();
+    if (!data?.profile && !data?.entries?.length) return;
+    if (!confirm('Connect this browser diary to ' + user.email + '? Existing online dates will be kept. This browser copy will also be kept.')) return;
+    $('cloud-migrate').disabled = true;
+    writing++;
+    try {
+      say('Connecting existing saved records. Keep this page open…');
+      // A stable source ID makes retries safe and keeps same-date local records in history.
+      let source = localStorage.getItem('progressdiary-device-id');
+      if (!source) { source = crypto.randomUUID(); localStorage.setItem('progressdiary-device-id', source); }
+      if (data.profile) await sdk.runTransaction(db, async tx => {
+        const target = ref('meta','profile'), current = await tx.get(target);
+        if (!current.exists()) tx.set(target, {schemaVersion:1, value:clean(data.profile), updatedAt:sdk.serverTimestamp()});
+        tx.set(ref('migrations', source), {schemaVersion:1, value:clean(data.profile)});
+      });
+      for (const day of data.entries || []) {
+        safeSize(day);
+        await sdk.runTransaction(db, async tx => {
+          const target=ref('days',day.date), current=await tx.get(target);
+          if (!current.exists()) {
+            tx.set(target,{schemaVersion:1,value:clean(day),updatedAt:sdk.serverTimestamp()});
+            tx.set(ref('days',day.date,'versions',String(day.revision||0)), {schemaVersion:1,value:{date:day.date,entry:clean(day),revision:day.revision||0,savedAt:new Date().toISOString(),action:'connected'}});
+          }
+          tx.set(ref('days',day.date,'versions','local-'+source+'-'+(day.revision||0)), {schemaVersion:1,value:{date:day.date,entry:clean(day),revision:day.revision||0,savedAt:new Date().toISOString(),action:'browser copy'}});
+        });
+      }
+      for (let i=0;i<(data.history||[]).length;i++) {
+        const version=data.history[i];
+        if (!version?.date || !version.entry) continue;
+        await sdk.setDoc(ref('days',version.date,'versions','history-'+source+'-'+i),{schemaVersion:1,value:clean(version)});
+      }
+      localStorage.setItem('progressdiary-connected-'+user.uid, 'yes');
+      $('cloud-migrate').hidden = true;
+      say('Browser records connected. Existing online records and your original browser copy were kept.');
+      refresh();
+    } catch(err) { say('Connection stopped: '+err.message+'. Original browser records are still available. You can retry safely.'); }
+    finally { writing--; $('cloud-migrate').disabled=false; }
+  }
+  async function start() {
+    try {
+      const root='https://www.gstatic.com/firebasejs/12.0.0/';
+      const [app,authentication,firestore]=await Promise.all([import(root+'firebase-app.js'),import(root+'firebase-auth.js'),import(root+'firebase-firestore.js')]);
+      sdk={...authentication,...firestore};
+      const firebase=app.initializeApp({apiKey:'AIzaSyCHsUvpgd86IXUZYnEgRDL0CUGbOqH04ig',authDomain:'progressdairy-72561.firebaseapp.com',projectId:'progressdairy-72561',appId:'1:746537801100:web:cd0470559b3a97138232a9'});
+      auth=sdk.getAuth(firebase); db=sdk.getFirestore(firebase);
+      let initial=true;
+      sdk.onAuthStateChanged(auth, async account => {
+        user=account; error=null; stop.forEach(fn=>fn());stop=[];
+        $('cloud-login').hidden=!!user; $('cloud-login').disabled=false; $('cloud-logout').hidden=!user;
+        $('cloud-migrate').hidden=!user||!local()?.profile||localStorage.getItem('progressdiary-connected-'+user?.uid)==='yes';
+        say(user?'Signed in as '+user.email+' · Loading account diary…':'Browser-only diary · Continue with Google to sync phone and computer.');
+        if(user) {
+          for(const target of [ref('meta','profile'),col('days')]) {
+            let first=true;
+            stop.push(sdk.onSnapshot(target,snapshot=>{
+              if(first){first=false;return;}
+              if(!writing&&!snapshot.metadata.hasPendingWrites){say('Account diary updated. Loading the latest saved records…');refresh();}
+            },err=>{say('Sync unavailable: '+err.message+'. Your existing records have not been deleted.');}));
+          }
+        }
+        if(initial){initial=false;resolveReady();} else refresh(true);
+      },err=>{error=err;resolveReady();say('Google sign-in is unavailable. Reload to retry.');});
+      $('cloud-login').onclick=async()=>{
+        if(window.ProgressDiaryDirty&&!confirm('Save your draft before changing accounts. Continue and discard only the unsaved draft?'))return;
+        $('cloud-login').disabled=true;
+        try {
+          const provider=new sdk.GoogleAuthProvider();provider.setCustomParameters({prompt:'select_account'});
+          await sdk.signInWithPopup(auth,provider);
+        } catch(err) {say('Sign-in failed: '+err.message+'. Your browser diary is unchanged. Allow pop-ups and try again.');}
+        finally{$('cloud-login').disabled=false;}
+      };
+      $('cloud-logout').onclick=async()=>{if(confirm('Sign out? Save your current draft first. Online records will stay in your account.')){if(writing){say('Wait for the current save to finish before signing out.');return;}await sdk.signOut(auth);}};
+      $('cloud-migrate').onclick=()=>migrate();
+    } catch(err) {error=err;resolveReady();say('Cloud connection could not load. Browser-only records are still available; refresh to retry.');}
+  }
+  start();
+})();
