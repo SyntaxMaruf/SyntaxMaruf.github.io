@@ -29,3 +29,6 @@
 
 /* Keep both time digits clear beside the mobile select arrow. */
 .english-time{gap:5px}.english-time>select{padding:10px 18px 10px 6px;min-width:48px}.english-time>small{display:none}
+
+/* Slightly stronger department and university credit. */
+.creator-credit>small{font-weight:600}
