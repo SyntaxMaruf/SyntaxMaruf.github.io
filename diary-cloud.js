@@ -1,6 +1,7 @@
 /* Stable account paths are independent of app releases. Never clear data on deploy. */
 (() => {
   const LOCAL = 'progressdiary-github-v1';
+  const maskEmail = email => { const [name,domain] = String(email||"").split("@"); if(!domain)return ""; const chars=Array.from(name),count=chars.length; const first=count>=8?4:count>=4?1:0,last=count>=6?2:count>=3?1:0; return chars.slice(0,first).join("")+"*".repeat(count-first-last)+(last?chars.slice(-last).join(""):"")+"@"+domain; };
   let sdk, auth, db, user = null, writing = 0, error = null, stop = [];
   let resolveReady;
   const ready = new Promise(resolve => { resolveReady = resolve; });
@@ -50,7 +51,7 @@
       const result = await reduce(state);
       if (path === 'state') {
         try { localStorage.setItem('progressdiary-account-cache-' + user.uid, JSON.stringify(state)); } catch {}
-        say('Signed in as ' + user.email + ' · Saved records are synced online.');
+        say('Signed in as ' + maskEmail(user.email) + ' · Saved records are synced online.');
       }
       return result;
     }
@@ -59,10 +60,12 @@
     say('Saving to your Google account…');
     try {
       const result = await sdk.runTransaction(db, async tx => {
-        const date = body?.date || body?.entry?.date;
+        const date = path === 'profile' ? new Intl.DateTimeFormat("en-CA-u-nu-latn",{timeZone:body.profile.timezone,year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date()) : body?.date || body?.entry?.date;
         const target = path === 'profile' ? ref('meta', 'profile') : ref('days', date);
         const current = unwrap(await tx.get(target));
-        const state = {profile: path === 'profile' ? current : null, entries: path === 'profile' ? [] : current ? [current] : [], history: []};
+        const todayTarget=path === 'profile' ? ref('days',date) : null;
+        const todayEntry=todayTarget ? unwrap(await tx.get(todayTarget)) : null;
+        const state = {profile: path === 'profile' ? current : null, entries: path === 'profile' ? (todayEntry?[todayEntry]:[]) : current ? [current] : [], history: []};
         if (path === 'history' && method === 'POST') {
           const old = await tx.get(ref('days', date, 'versions', String(body.version)));
           if (old.exists()) state.history.push(decode(old.data().value));
@@ -73,6 +76,7 @@
         const next = path === 'profile' ? state.profile : state.entries.find(d => d.date === date);
         safeSize(next);
         tx.set(target, {schemaVersion: 1, value: clean(next), updatedAt: sdk.serverTimestamp()}, {merge: true});
+        if(todayTarget){const updated=state.entries.find(day=>day.date===date);if(updated&&updated.revision!==todayEntry?.revision){safeSize(updated);tx.set(todayTarget,{schemaVersion:1,value:clean(updated),updatedAt:sdk.serverTimestamp()},{merge:true});}}
         for (const version of state.history.slice(historyStart)) {
           safeSize(version);
           tx.set(ref('days', version.date, 'versions', String(version.revision)), {schemaVersion: 1, value: clean(version)});
@@ -89,7 +93,7 @@
   async function migrate() {
     const data = local();
     if (!data?.profile && !data?.entries?.length) return;
-    if (!confirm('Connect this browser diary to ' + user.email + '? Existing online dates will be kept. This browser copy will also be kept.')) return;
+    if (!confirm('Connect this browser diary to ' + maskEmail(user.email) + '? Existing online dates will be kept. This browser copy will also be kept.')) return;
     $('cloud-migrate').disabled = true;
     writing++;
     try {
@@ -137,7 +141,7 @@
         user=account; error=null; stop.forEach(fn=>fn());stop=[];
         $('cloud-login').hidden=!!user; $('cloud-login').disabled=false; $('cloud-logout').hidden=!user;
         $('cloud-migrate').hidden=!user||!local()?.profile||localStorage.getItem('progressdiary-connected-'+user?.uid)==='yes';
-        say(user?'Signed in as '+user.email+' · Loading account diary…':'Browser-only diary · Continue with Google to sync phone and computer.');
+        say(user?'Signed in as '+maskEmail(user.email)+' · Loading account diary…':'Browser-only diary · Continue with Google to sync phone and computer.');
         if(user) {
           for(const target of [ref('meta','profile'),col('days')]) {
             let first=true;
