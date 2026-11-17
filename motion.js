@@ -1,6 +1,6 @@
 'use strict';
 
-// Animation preferences stay in this browser. No data leaves the page.
+// Motion starts on for each page visit. The toggle applies to the current visit.
 (() => {
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
   const toggle = document.getElementById('motion-toggle');
@@ -8,9 +8,7 @@
   const role = document.getElementById('live-role');
   const phrases = ['C programming', 'web development', 'practical ideas'];
   let phraseIndex = 0;
-  let storedPreference = null;
-  try { storedPreference = localStorage.getItem('syntaxmaruf-motion'); } catch { /* Optional storage. */ }
-  let paused = storedPreference === 'paused' || (storedPreference !== 'on' && reduced.matches);
+  let paused = false;
   let phraseTimer;
   let changeTimer;
   function resetPortrait() {
@@ -33,8 +31,7 @@
       changeTimer = setTimeout(() => {phraseIndex=(phraseIndex+1)%phrases.length;role.textContent=phrases[phraseIndex];role.classList.remove('changing');},210);
     },3500);
   }
-  toggle.addEventListener('click', () => {paused=!paused;storedPreference=paused?'paused':'on';try{localStorage.setItem('syntaxmaruf-motion',storedPreference);}catch{}applyPreference();});
-  reduced.addEventListener('change', () => {if(storedPreference !== 'on' && storedPreference !== 'paused') paused=reduced.matches;applyPreference();});
+  toggle.addEventListener('click', () => {paused=!paused;applyPreference();});
   applyPreference();
   if(scene){
     scene.addEventListener('pointermove',event=>{
