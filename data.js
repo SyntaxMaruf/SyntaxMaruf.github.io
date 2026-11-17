@@ -10,21 +10,21 @@ window.portfolioProjects = [
     ],
     "tags": [
       "Live App",
-      "Private Accounts",
+      "Browser Storage",
       "Daily Progress"
     ],
-    "description": "Your day. Your pace. Your progress. A private diary for study, routines, sleep, spending, and reflection.",
+    "description": "Your day. Your pace. Your progress. A browser-saved diary for study, routines, sleep, spending, and reflection.",
     "repo": null,
     "number": "01",
     "visual": "diary",
-    "appUrl": "https://progressdiary.curlyriver4.chatgpt.site",
+    "appUrl": "./progressdiary.html",
     "points": [
-      "Sign in with ChatGPT; each account has its own private records",
+      "No login needed; records are saved in this browser only",
       "Build a seven-day routine and edit only the hours you choose",
       "Record study, classes, sleep, daily spending and optional prayers",
       "Search saved days, compare weeks, and download your own reports"
     ],
-    "detail": "My original C programming idea, reimagined as a full-stack web app. ProgressDiary makes daily tracking simple with a visual weekly planner, honest daily logs, date-based reports and personal progress summaries. Every signed-in user gets a separate diary. Idea by Maruf Billah, implemented with AI support."
+    "detail": "My original C programming idea, reimagined as a full-stack web app. ProgressDiary makes daily tracking simple with a visual weekly planner, honest daily logs, date-based reports and personal progress summaries. Each browser keeps its own diary. Download backups; automatic cross-device sync is not available. Idea by Maruf Billah, implemented with AI support."
   },
   {
     "id": "bus",
