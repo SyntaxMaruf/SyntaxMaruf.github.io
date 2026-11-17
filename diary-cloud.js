@@ -9,8 +9,11 @@
   const bar = document.createElement('section');
   bar.className = 'cloud-account';
   bar.setAttribute('aria-label', 'Google account and sync');
-  bar.innerHTML = '<div><strong>ProgressDiary account</strong><p id="cloud-status" role="status">Connecting to Google sign-in…</p></div><div class="cloud-actions"><button id="cloud-login" disabled>Continue with Google</button><button id="cloud-migrate" hidden>Connect this browser diary</button><button id="cloud-logout" hidden>Sign out</button></div>';
+  bar.innerHTML = '<div><strong id="cloud-name">ProgressDiary account</strong><p id="cloud-identity" hidden></p><p id="cloud-status" role="status">Connecting to Google sign-in…</p></div><div class="cloud-actions"><button id="cloud-login" disabled>Continue with Google</button><button id="cloud-migrate" hidden>Connect this browser diary</button><button id="cloud-logout" hidden>Sign out</button></div>';
   document.body.prepend(bar);
+  const logout=bar.querySelector("#cloud-logout"),sidebarActions=document.createElement("div");sidebarActions.className="sidebar-account-actions";
+  function placeAccount(){const sidebar=document.querySelector(".sidebar-bottom");sidebarActions.hidden=!user;if(sidebar){if(bar.parentElement!==sidebar||sidebar.firstElementChild!==bar)sidebar.prepend(bar);if(sidebarActions.parentElement!==sidebar)sidebar.append(sidebarActions);if(logout.parentElement!==sidebarActions)sidebarActions.append(logout);}else{const actions=bar.querySelector(".cloud-actions");if(logout.parentElement!==actions)actions.append(logout);if(bar.parentElement!==document.body)document.body.prepend(bar);}}
+  new MutationObserver(placeAccount).observe(document.body,{childList:true,subtree:true});
   const $ = id => document.getElementById(id);
   const say = message => { $('cloud-status').textContent = message; };
   const clean = value => ({__pd_json_v1: JSON.stringify(value)});
@@ -51,7 +54,7 @@
       const result = await reduce(state);
       if (path === 'state') {
         try { localStorage.setItem('progressdiary-account-cache-' + user.uid, JSON.stringify(state)); } catch {}
-        say('Signed in as ' + maskEmail(user.email) + ' · Saved records are synced online.');
+        say('Saved records are synced online.');
       }
       return result;
     }
@@ -139,9 +142,13 @@
       let initial=true;
       sdk.onAuthStateChanged(auth, async account => {
         user=account; error=null; stop.forEach(fn=>fn());stop=[];
+        $("cloud-name").textContent=user?(user.displayName||"Your account"):"ProgressDiary account";
+        $('cloud-identity').hidden=!user;
+        $('cloud-identity').textContent=user?maskEmail(user.email):'';
+        placeAccount();
         $('cloud-login').hidden=!!user; $('cloud-login').disabled=false; $('cloud-logout').hidden=!user;
         $('cloud-migrate').hidden=!user||!local()?.profile||localStorage.getItem('progressdiary-connected-'+user?.uid)==='yes';
-        say(user?'Signed in as '+maskEmail(user.email)+' · Loading account diary…':'Browser-only diary · Continue with Google to sync phone and computer.');
+        say(user?'Loading your account diary…':'Browser-only diary · Continue with Google to sync phone and computer.');
         if(user) {
           for(const target of [ref('meta','profile'),col('days')]) {
             let first=true;
