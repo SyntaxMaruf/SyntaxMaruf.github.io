@@ -1,7 +1,7 @@
 # SyntaxMaruf Portfolio 🌿
 
 I am Maruf Billah, a Computer Science and Engineering student at Daffodil International University.
-First year, 3rd semester.
+Now I am in First year, 3rd semester.
 
 Idea is mine, implemented with AI support.
 
