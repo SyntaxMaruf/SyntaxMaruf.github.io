@@ -1,6 +1,6 @@
 # SyntaxMaruf Portfolio 🌿
 
-I am Maruf Billah, a CSE student at Daffodil International University (DIU).
+I am Maruf Billah, a Computer Science and Engineering student at Daffodil International University.
 First year, 3rd semester.
 
 Idea is mine, implemented with AI support.
