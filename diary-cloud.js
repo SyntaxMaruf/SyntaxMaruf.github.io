@@ -1,5 +1,32 @@
 /* Stable account paths are independent of app releases. Never clear data on deploy. */
 (() => {
+  const stats = window.ProgressDiaryStats = {pageViews:null, registeredAccounts:null, startedAt:null, status:'loading'};
+  const publishStats = patch => {Object.assign(stats,patch);window.dispatchEvent(new CustomEvent('progressdiary:stats'));};
+  let statsRef, accountCountPending=false;
+  async function countRegisteredAccount() {
+    if(!user||!statsRef||accountCountPending)return;
+    const uid=user.uid;accountCountPending=true;
+    try {
+      await sdk.runTransaction(db,async tx=>{
+        const marker=sdk.doc(db,'accountStats',uid), seen=await tx.get(marker);
+        if(seen.exists())return;
+        const total=await tx.get(statsRef);if(!total.exists())throw Error('Statistics are not initialized.');
+        tx.set(marker,{createdAt:sdk.serverTimestamp()});
+        tx.update(statsRef,{registeredAccounts:sdk.increment(1)});
+      });
+    } catch(err) {console.warn('Account statistics are unavailable.',err.code||err.message);}
+    finally{accountCountPending=false;}
+  }
+  function connectPublicStatistics() {
+    statsRef=sdk.doc(db,'publicStats','progressdiary');
+    sdk.onSnapshot(statsRef,snapshot=>{
+      const data=snapshot.data();
+      if(!data||!Number.isSafeInteger(data.pageViews)||!Number.isSafeInteger(data.registeredAccounts)){publishStats({status:'unavailable'});return;}
+      publishStats({pageViews:data.pageViews,registeredAccounts:data.registeredAccounts,startedAt:data.startedAt,status:'ready'});
+    },()=>publishStats({status:'unavailable'}));
+    sdk.updateDoc(statsRef,{pageViews:sdk.increment(1)}).catch(()=>publishStats({status:'unavailable'}));
+    window.addEventListener('online',countRegisteredAccount);
+  }
   const LOCAL = 'progressdiary-github-v1';
   const maskEmail = email => { const [name,domain] = String(email||"").split("@"); if(!domain)return ""; const chars=Array.from(name),count=chars.length; const first=count>=8?4:count>=4?1:0,last=count>=6?2:count>=3?1:0; return chars.slice(0,first).join("")+"*".repeat(count-first-last)+(last?chars.slice(-last).join(""):"")+"@"+domain; };
   let sdk, auth, db, user = null, writing = 0, error = null, stop = [];
@@ -139,6 +166,7 @@
       sdk={...authentication,...firestore};
       const firebase=app.initializeApp({apiKey:'AIzaSyCHsUvpgd86IXUZYnEgRDL0CUGbOqH04ig',authDomain:'progressdairy-72561.firebaseapp.com',projectId:'progressdairy-72561',appId:'1:746537801100:web:cd0470559b3a97138232a9'});
       auth=sdk.getAuth(firebase); db=sdk.getFirestore(firebase);
+      connectPublicStatistics();
       let initial=true;
       sdk.onAuthStateChanged(auth, async account => {
         user=account; error=null; stop.forEach(fn=>fn());stop=[];
@@ -150,6 +178,7 @@
         $('cloud-migrate').hidden=!user||!local()?.profile||localStorage.getItem('progressdiary-connected-'+user?.uid)==='yes';
         say(user?'Loading your account diary…':'Browser-only diary · Continue with Google to sync phone and computer.');
         if(user) {
+          countRegisteredAccount();
           for(const target of [ref('meta','profile'),col('days')]) {
             let first=true;
             stop.push(sdk.onSnapshot(target,snapshot=>{
