@@ -35,3 +35,7 @@
 
 .import-panel{margin:24px 0}.import-panel input[type=file]{max-width:100%;width:100%}.import-profile-choice{display:flex;align-items:flex-start;gap:10px;font-size:14px;margin:18px 0}.import-profile-choice input{margin-top:5px;flex-shrink:0}.import-panel .button{margin:5px 8px 5px 0}
 
+
+/* Match the date selectors without stretching to the field label. */
+.routine-tools{align-items:flex-end}.routine-tools .weekday-tabs{box-sizing:border-box;height:42px;min-height:42px;align-self:flex-end;align-items:stretch;padding:4px}.routine-tools .weekday-tabs button{height:32px;min-height:32px;padding:0 13px;line-height:1.2;display:flex;align-items:center;justify-content:center}.routine-tools>.button{height:42px;min-height:42px;align-self:flex-end;padding:0 20px;white-space:nowrap}@media(max-width:700px){.routine-tools .weekday-tabs{height:42px;min-height:42px}.routine-tools .weekday-tabs button{padding:0 8px;flex:1}.routine-tools>.button{height:42px;min-height:42px}}
+
