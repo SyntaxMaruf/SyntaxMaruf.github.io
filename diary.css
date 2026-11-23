@@ -47,3 +47,15 @@
 /* Keep the weekday strip only as wide as its seven buttons. */
 @media(min-width:1001px){.routine-tools{grid-template-columns:minmax(210px,auto) max-content max-content;justify-content:start}.routine-tools .weekday-tabs{width:max-content;justify-content:flex-start;gap:5px}.routine-tools .weekday-tabs button{flex:0 0 auto}}
 
+
+/* Daily report navigation shares the exact width of the date selectors. */
+.report-panel>.panel-heading .report-date-navigation{align-items:flex-start}
+.report-date-label{padding-top:12px;white-space:nowrap}
+.report-date-stack{display:grid;grid-template-columns:max-content;gap:9px;margin-left:auto;min-width:0;max-width:100%}
+.report-day-buttons{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%}
+.report-day-buttons button{display:flex;align-items:center;justify-content:center;min-height:37px;padding:8px 6px;border:1px solid #bcdedb;border-radius:8px;background:#e5f3f0;color:#176b68;font-size:12px;font-weight:600;line-height:1.3;white-space:nowrap;cursor:pointer}
+.report-day-buttons button:hover:not(:disabled){background:#d2ebe6;border-color:#84bfb6}
+.report-day-buttons button:focus-visible{outline:2px solid #0f7e85;outline-offset:3px}
+.report-day-buttons button:disabled{opacity:.45;cursor:default}
+@media(max-width:700px){.report-date-stack{gap:8px}.report-day-buttons button{min-height:40px;font-size:12px}}
+
