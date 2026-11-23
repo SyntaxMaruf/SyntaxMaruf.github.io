@@ -59,3 +59,7 @@
 .report-day-buttons button:disabled{opacity:.45;cursor:default}
 @media(max-width:700px){.report-date-stack{gap:8px}.report-day-buttons button{min-height:40px;font-size:12px}}
 
+
+/* Soft sky-blue finish for report day navigation. */
+.report-day-buttons button{background:linear-gradient(125deg,#b7e8f5 0%,#8ed2e9 50%,#69b6d8 100%);border-color:#83bfd7;color:#164b64;box-shadow:inset 0 1px 0 #ffffff80,0 2px 5px #427f9910}.report-day-buttons button:hover:not(:disabled){background:linear-gradient(125deg,#a9e1f2 0%,#7dc8e3 50%,#58a9ce 100%);border-color:#589dbd}.report-day-buttons button:disabled{opacity:1;background:linear-gradient(125deg,#edf6fa,#dfedf4);border-color:#d2e3eb;color:#617d8a;box-shadow:none}
+
