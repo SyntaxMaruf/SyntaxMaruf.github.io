@@ -184,7 +184,7 @@ function plannedHourScene(hour) {
   return ['unplanned','study','class','sleep','prayer-meals','rest','exercise','other'][hour.type]||'unplanned';
 }
 function rhythmClock(timezone,now=new Date()){const parts=new Intl.DateTimeFormat('en-GB',{timeZone:timezone,hour:'2-digit',hourCycle:'h23',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(now);const get=t=>parts.find(p=>p.type===t)?.value;return {hour:Number(get('hour'))%24,date:get('year')+'-'+get('month')+'-'+get('day')}}
-function rhythmScrollTarget(hour,width,total,left,cardWidth,mobile=false){const max=Math.max(0,total-width);if(mobile)return hour<3?0:hour>=21?max:Math.max(0,Math.min(max,left+cardWidth/2-width/2));const progress=Math.max(0,Math.min(1,(hour-12)/11));return Math.min(max,Math.max(0,left+cardWidth-width,Math.min(max*progress,left)))}
+function rhythmScrollTarget(hour,width,total,left,cardWidth,mobile=false){const max=Math.max(0,total-width);if(mobile)return hour<3?0:hour>=21?max:Math.max(0,Math.min(max,left+cardWidth/2-width/2));return hour<9?0:hour>=15?max:Math.max(0,Math.min(max,left+cardWidth/2-width/2))}
 function Wg({plan:e,onOpen:a,timezone}) {
   const [clock,setClock]=se.useState(()=>rhythmClock(timezone)),strip=se.useRef(null);
   se.useEffect(()=>{const tick=()=>{const next=rhythmClock(timezone);setClock(old=>old.hour===next.hour&&old.date===next.date?old:next)};tick();const timer=setInterval(tick,1000);window.addEventListener('focus',tick);document.addEventListener('visibilitychange',tick);return()=>{clearInterval(timer);window.removeEventListener('focus',tick);document.removeEventListener('visibilitychange',tick)}},[timezone]);
@@ -364,6 +364,7 @@ lucide-react/dist/esm/lucide-react.mjs:
    * See the LICENSE file in the root directory of this source tree.
    *)
 */
+
 
 
 
