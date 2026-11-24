@@ -63,3 +63,18 @@
 /* Soft sky-blue finish for report day navigation. */
 .report-day-buttons button{background:linear-gradient(125deg,#b7e8f5 0%,#8ed2e9 50%,#69b6d8 100%);border-color:#83bfd7;color:#164b64;box-shadow:inset 0 1px 0 #ffffff80,0 2px 5px #427f9910}.report-day-buttons button:hover:not(:disabled){background:linear-gradient(125deg,#a9e1f2 0%,#7dc8e3 50%,#58a9ce 100%);border-color:#589dbd}.report-day-buttons button:disabled{opacity:1;background:linear-gradient(125deg,#edf6fa,#dfedf4);border-color:#d2e3eb;color:#617d8a;box-shadow:none}
 
+
+/* Keep the daily log within the viewport; tables retain their own scrolling. */
+@media(max-width:700px){
+.content:has(.daily-grid){min-width:0;width:100%;max-width:100%;box-sizing:border-box}
+.daily-grid{grid-template-columns:minmax(0,1fr);min-width:0;max-width:100%}
+.daily-grid>*,.daily-side,.daily-side>*,.daily-grid .panel,.daily-grid .form-grid{min-width:0;max-width:100%;box-sizing:border-box}
+.daily-side{grid-template-columns:minmax(0,1fr)}
+.daily-grid .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.daily-grid .table-scroll{width:100%;max-width:100%;min-width:0;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.daily-grid .panel-heading{flex-wrap:wrap}
+.daily-grid .panel-heading>div{min-width:0}
+.daily-grid input,.daily-grid textarea,.daily-grid select{max-width:100%;box-sizing:border-box}
+.daily-grid .book-card,.daily-grid .reading-session{min-width:0;overflow-wrap:anywhere}
+}
+
