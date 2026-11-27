@@ -42,7 +42,11 @@
   function placeAccount(){const sidebar=document.querySelector(".sidebar-bottom");sidebarActions.hidden=!user;if(sidebar){if(bar.parentElement!==sidebar||sidebar.firstElementChild!==bar)sidebar.prepend(bar);if(sidebarActions.parentElement!==sidebar)sidebar.append(sidebarActions);if(logout.parentElement!==sidebarActions)sidebarActions.append(logout);}else{const actions=bar.querySelector(".cloud-actions");if(logout.parentElement!==actions)actions.append(logout);if(bar.parentElement!==document.body)document.body.prepend(bar);}}
   new MutationObserver(placeAccount).observe(document.body,{childList:true,subtree:true});
   const $ = id => document.getElementById(id);
-  const say = message => { $('cloud-status').textContent = message; };
+  let originalStatus=$('cloud-status').textContent;
+  const localize=value=>window.ProgressDiaryLanguage?.text(value)||value;
+  const say = message => { originalStatus=message;$('cloud-status').textContent=localize(message); };
+  function translateAccount(){say(originalStatus);$('cloud-login').textContent=localize('Continue with Google');$('cloud-logout').textContent=localize('Sign out');$('cloud-migrate').textContent=localize('Connect this browser diary');bar.setAttribute('aria-label',localize('Google account and sync'));if(!user)$('cloud-name').textContent=localize('ProgressDiary account');}
+  window.addEventListener('progressdiary-language',translateAccount);translateAccount();
   const clean = value => ({__pd_json_v1: JSON.stringify(value)});
   const decode = value => { if (!value || typeof value !== "object") return value; if (typeof value.__pd_json_v1 === "string") return decode(JSON.parse(value.__pd_json_v1)); if (Array.isArray(value)) return value.map(decode); return Object.fromEntries(Object.entries(value).map(([key,item])=>[key,decode(item)])); };
   const refresh = (accountChange=false) => window.dispatchEvent(new CustomEvent('progressdiary:refresh',{detail:{accountChange}}));
@@ -170,7 +174,7 @@
       let initial=true;
       sdk.onAuthStateChanged(auth, async account => {
         user=account; error=null; stop.forEach(fn=>fn());stop=[];
-        $("cloud-name").textContent=user?(user.displayName||"Your account"):"ProgressDiary account";
+        $("cloud-name").textContent=user?(user.displayName||localize("Your account")):localize("ProgressDiary account");
         $('cloud-identity').hidden=!user;
         $('cloud-identity').textContent=user?maskEmail(user.email):'';
         placeAccount();
@@ -204,3 +208,4 @@
   }
   start();
 })();
+
